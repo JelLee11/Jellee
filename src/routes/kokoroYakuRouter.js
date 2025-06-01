@@ -12,6 +12,6 @@ router.get("/kokoro/latest", getLatestUpdate);
 // Route: /kokoro/info/:novelId
 router.get("/kokoro/info/:novelId", getNovelInfo);
 // Route: /kokoro/popularity
-router.get("/kokoro/popularity", getNovelInfo);
+router.get("/kokoro/popular", getPopularNovels);
 
 module.exports = router;
