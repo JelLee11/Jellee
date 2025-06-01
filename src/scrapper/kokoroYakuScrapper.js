@@ -8,7 +8,7 @@ async function scrapeLatestUpdate() {
 }
 
 // Fetches manga info from the Jikan API by MAL ID
-async function fetchMangaFromJikan(malId) {
+/*async function fetchMangaFromJikan(malId) {
   try {
     const response = await axios.get(`https://api.jikan.moe/v4/manga/${malId}`);
     return response.data?.data || null;
@@ -16,7 +16,32 @@ async function fetchMangaFromJikan(malId) {
     console.warn(`Jikan API fetch failed for malId ${malId}:`, error.message);
     return null;
   }
+} */
+
+async function fetchMangaFromJikan(malId) {
+  try {
+    const response = await axios.get(`https://api.jikan.moe/v4/manga/${malId}`);
+    const data = response.data?.data;
+
+    if (!data) return null;
+
+    return {
+      images: data.images || {},
+      titles: data.titles || [],
+      type: data.type || "",
+      status: data.status || "",
+      score: data.score || 0,
+      popularity: data.popularity || 0,
+      synopsis: data.synopsis || "",
+      genres: data.genres || [],
+      authors: data.authors || []
+    };
+  } catch (error) {
+    console.warn(`Jikan API fetch failed for malId ${malId}:`, error.message);
+    return null;
+  }
 }
+
 // Fetch from AniList GraphQL API
 async function fetchMangaFromAnilist(anilistId) {
   const query = `
