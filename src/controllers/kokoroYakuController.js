@@ -60,7 +60,7 @@ async function getLatestUpdate(req, res) {
 async function getNovelInfo(req, res) {
   try {
     const novelId = req.params.novelId;
-    const providerType = req.query.provider; // "mal" or "anilist"
+    const providerType = req.query.providers; // "mal" or "anilist"
 
     const novels = await scrapeLatestUpdate();
 
@@ -81,8 +81,8 @@ async function getNovelInfo(req, res) {
       cover: matchingNovel.cover || "",
       volume: matchingNovel.volume || "",
       providers: {
-        malId: matchingNovel.provider?.malId?.toString() || "",
-        anilistId: matchingNovel.provider?.anilistId?.toString() || ""
+        malId: matchingNovel.providers?.malId?.toString() || "",
+        anilistId: matchingNovel.providers?.anilistId?.toString() || ""
       },
       epubLink: matchingNovel.epubLink || ""
     };
