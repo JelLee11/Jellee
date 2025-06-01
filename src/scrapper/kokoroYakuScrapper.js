@@ -8,29 +8,6 @@ async function scrapeLatestUpdate() {
 }
 
 // Fetches manga info from the Jikan API by MAL ID
-/*async function fetchMangaFromJikan(malId) {
-  try {
-    const response = await axios.get(`https://api.jikan.moe/v4/manga/${malId}`);
-    const data = response.data?.data;
-
-    if (!data) return null;
-
-    return {
-      images: data.images || {},
-      titles: data.titles || [],
-      type: data.type || "",
-      status: data.status || "",
-      score: data.score || 0,
-      popularity: data.popularity || 0,
-      synopsis: data.synopsis || "",
-      genres: data.genres || [],
-      authors: data.authors || []
-    };
-  } catch (error) {
-    console.warn(`Jikan API fetch failed for malId ${malId}:`, error.message);
-    return null;
-  }
-} */
 async function fetchMangaFromJikan(malId) {
   try {
     const response = await axios.get(`https://api.jikan.moe/v4/manga/${malId}`);
@@ -66,68 +43,6 @@ async function fetchMangaFromJikan(malId) {
 }
 
 // Fetch from AniList GraphQL API
-/* async function fetchMangaFromAnilist(anilistId) {
-  const query = `
-    query ($id: Int) {
-    Media(id: $id, type: MANGA, format: NOVEL) {
-        id
-        title {
-          romaji
-          english
-          native
-          userPreferred
-        }
-        type
-        status
-        description
-        coverImage {
-          extraLarge
-          large
-          medium
-          color
-        }
-        bannerImage
-        genres
-        averageScore
-        meanScore
-        popularity
-        staff {
-          nodes {
-            name {
-              first
-              middle
-              last
-              full
-              native
-              userPreferred
-            }
-            primaryOccupations
-          }
-        }
-      }
-    }
-  `;
-
-  const variables = { id: parseInt(anilistId) };
-
-  try {
-    const response = await axios.post("https://graphql.anilist.co", {
-      query,
-      variables
-    }, {
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      }
-    });
-
-    return response.data?.data?.Media || null;
-  } catch (error) {
-    console.warn(`AniList API fetch failed for anilistId ${anilistId}:`, error.message);
-    return null;
-  }
-} */
-
 async function fetchMangaFromAnilist(anilistId) {
   const query = `
     query ($id: Int) {
@@ -200,8 +115,34 @@ async function fetchMangaFromAnilist(anilistId) {
   }
 }
 
+// Fetch popularity
+async function getSortedNovelsByPopularity(provider = "anilist") {
+  const response = await axios(BASE_DATA);
+  const novels = response.data;
+
+  const enrichedNovels = await Promise.all(novels.map(async (novel) => {
+    let info = null;
+
+    if (provider === "mal" && novel.providers?.malId) {
+      info = await fetchMangaFromJikan(novel.providers.malId);
+    } else if (provider === "anilist" && novel.providers?.anilistId) {
+      info = await fetchMangaFromAnilist(novel.providers.anilistId);
+    }
+
+    return {
+      ...novel,
+      popularity: info?.popularity || 0
+    };
+  }));
+
+  return enrichedNovels
+    .filter(n => n.popularity > 0)
+    .sort((a, b) => b.popularity - a.popularity);
+}
+
 module.exports = {
   scrapeLatestUpdate,
   fetchMangaFromJikan,
-  fetchMangaFromAnilist
+  fetchMangaFromAnilist,
+  getSortedNovelsByPopularity
 };
