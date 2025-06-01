@@ -2,7 +2,8 @@
 const {
   scrapeLatestUpdate,
   fetchMangaFromJikan,
-  fetchMangaFromAnilist
+  fetchMangaFromAnilist,
+  getSortedNovelsByPopularity
 } = require("../scrapper/kokoroYakuScrapper");
 
 async function getLatestUpdate(req, res) {
@@ -109,7 +110,49 @@ async function getNovelInfo(req, res) {
   }
 }
 
+// Get popularity
+async function getPopularNovels(req, res) {
+  try {
+    const provider = req.query.provider === "mal" ? "mal" : "anilist";
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const perPage = Math.max(1, parseInt(req.query.perPage) || 10);
+
+    const sortedNovels = await getSortedNovelsByPopularity(provider);
+
+    const startIndex = (page - 1) * perPage;
+    const paginated = sortedNovels.slice(startIndex, startIndex + perPage);
+
+    const result = paginated.map(novel => ({
+      id: novel.id || "",
+      title: novel.title || "",
+      cover: novel.cover || "",
+      volume: novel.volume || "",
+      popularity: novel.popularity || 0,
+      providers: {
+        malId: novel.providers?.malId || "",
+        anilistId: novel.providers?.anilistId || ""
+      },
+      epubLink: novel.epubLink || ""
+    }));
+
+    return res.status(200).json({
+      success: true,
+      total: sortedNovels.length,
+      page,
+      perPage,
+      data: result
+    });
+  } catch (error) {
+    console.error("error in getPopularNovels:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular novels"
+    });
+  }
+}
+
 module.exports = {
   getLatestUpdate,
-  getNovelInfo
+  getNovelInfo,
+  getPopularNovels
 };
