@@ -118,6 +118,5 @@ async function fetchMangaFromAnilist(anilistId) {
 module.exports = {
   scrapeLatestUpdate,
   fetchMangaFromJikan,
-  fetchMangaFromAnilist,
-  getSortedNovelsByPopularity
+  fetchMangaFromAnilist
 };
