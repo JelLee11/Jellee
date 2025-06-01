@@ -46,24 +46,41 @@ async function fetchMangaFromJikan(malId) {
 async function fetchMangaFromAnilist(anilistId) {
   const query = `
     query ($id: Int) {
-      Media(id: $id, type: MANGA, format: LIGHT NOVEL) {
+    Media(id: $id, type: MANGA, format: NOVEL) {
         id
         title {
           romaji
           english
           native
+          userPreferred
         }
+        type
+        status
         description
         coverImage {
+          extraLarge
           large
+          medium
           color
         }
-        siteUrl
+        bannerImage
         genres
         averageScore
-        chapters
-        volumes
-        status
+        meanScore
+        popularity
+        staff {
+          nodes {
+            name {
+              first
+              middle
+              last
+              full
+              native
+              userPreferred
+            }
+            primaryOccupations
+          }
+        }
       }
     }
   `;
