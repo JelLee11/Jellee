@@ -2,8 +2,7 @@
 const {
   scrapeLatestUpdate,
   fetchMangaFromJikan,
-  fetchMangaFromAnilist,
-  getSortedNovelsByPopularity
+  fetchMangaFromAnilist
 } = require("../scrapper/kokoroYakuScrapper");
 
 async function getLatestUpdate(req, res) {
