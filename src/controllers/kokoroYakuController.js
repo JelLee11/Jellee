@@ -127,7 +127,6 @@ async function getPopularNovels(req, res) {
       title: novel.title || "",
       cover: novel.cover || "",
       volume: novel.volume || "",
-      popularity: novel.popularity || 0,
       providers: {
         malId: novel.providers?.malId || "",
         anilistId: novel.providers?.anilistId || ""
