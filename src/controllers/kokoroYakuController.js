@@ -113,33 +113,67 @@ async function getNovelInfo(req, res) {
 // Get popularity
 async function getPopularNovels(req, res) {
   try {
-    const provider = req.query.provider === "mal" ? "mal" : "anilist";
+    const providerType = req.query.provider; // "mal" or "anilist"
+    if (!["mal", "anilist"].includes(providerType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid provider type. Must be 'mal' or 'anilist'."
+      });
+    }
+
+    const novels = await scrapeLatestUpdate();
+
+    // Filter by provider
+    const filteredNovels = novels.filter(novel =>
+      providerType === "mal"
+        ? novel.providers?.malId
+        : novel.providers?.anilistId
+    );
+
+    // ✅ Apply pagination BEFORE fetching popularity
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const perPage = Math.max(1, parseInt(req.query.perPage) || 10);
-
-    const sortedNovels = await getSortedNovelsByPopularity(provider);
-
     const startIndex = (page - 1) * perPage;
-    const paginated = sortedNovels.slice(startIndex, startIndex + perPage);
+    const endIndex = startIndex + perPage;
 
-    const result = paginated.map(novel => ({
-      id: novel.id || "",
-      title: novel.title || "",
-      cover: novel.cover || "",
-      volume: novel.volume || "",
-      providers: {
-        malId: novel.providers?.malId || "",
-        anilistId: novel.providers?.anilistId || ""
-      },
-      epubLink: novel.epubLink || ""
-    }));
+    const pageItems = filteredNovels.slice(startIndex, endIndex);
+
+    // ✅ Fetch popularity for current page only
+    const enriched = await Promise.all(
+      pageItems.map(async novel => {
+        const id =
+          providerType === "mal"
+            ? novel.providers.malId
+            : novel.providers.anilistId;
+
+        const info =
+          providerType === "mal"
+            ? await fetchMangaFromJikan(id)
+            : await fetchMangaFromAnilist(id);
+
+        return {
+          ...novel,
+          popularity: info?.popularity || 0,
+          score: info?.score || 0,
+          titles: info?.titles || {},
+          images: info?.images || {},
+          synopsis: info?.synopsis || "",
+          genres: info?.genres || [],
+          authors: info?.authors || [],
+        };
+      })
+    );
+
+    // ✅ Sort only the page items by popularity
+    const sorted = enriched.sort((a, b) => b.popularity - a.popularity);
 
     return res.status(200).json({
       success: true,
-      total: sortedNovels.length,
+      provider: providerType,
+      total: filteredNovels.length,
       page,
       perPage,
-      data: result
+      data: sorted
     });
   } catch (error) {
     console.error("error in getPopularNovels:", error.message);
