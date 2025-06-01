@@ -120,39 +120,48 @@ async function getSortedNovelsByPopularity(provider = "anilist") {
   const response = await axios(BASE_DATA);
   const novels = response.data;
 
-  const enrichedNovels = await Promise.all(novels.map(async (novel) => {
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const enrichedNovels = [];
+
+  for (const novel of novels) {
     let info = null;
 
-    if (provider === "mal" && novel.providers?.malId) {
-      info = await fetchMangaFromJikan(novel.providers.malId);
-    } else if (provider === "anilist" && novel.providers?.anilistId) {
-      info = await fetchMangaFromAnilist(novel.providers.anilistId);
+    try {
+      if (provider === "mal" && novel.providers?.malId) {
+        info = await fetchMangaFromJikan(novel.providers.malId);
+        await sleep(300); // Prevent Jikan rate limit
+      } else if (provider === "anilist" && novel.providers?.anilistId) {
+        info = await fetchMangaFromAnilist(novel.providers.anilistId);
+        await sleep(300); // Prevent AniList rate limit
+      }
+
+      if (!info) {
+        console.warn(`No info found for "${novel.title}" [${provider}]`);
+      }
+
+      enrichedNovels.push({
+        ...novel,
+        popularity: info?.popularity || 0
+      });
+
+    } catch (err) {
+      console.error(`Failed to fetch info for ${novel.title}:`, err.message);
     }
+  }
 
-    return {
-      ...novel,
-      popularity: info?.popularity || 0
-    };
-  }));
-
-  /* return enrichedNovels
-    .filter(n => n.popularity > 0)
-    .sort((a, b) => b.popularity - a.popularity); */
-    
-    const uniqueByTitle = {};
+  // Filter only Volume 1 entries and remove duplicates
+  const uniqueByTitle = {};
   for (const novel of enrichedNovels) {
     if (!novel.title) continue;
-  
+
     const key = novel.title.trim().toLowerCase();
-  
-    const isVol1 = /^(\s*vol(?:ume)?\.?\s*)?1$/i.test(novel.volume?.trim());
-  
-    // Keep volume 1 or the first seen if not already set
-    if (!uniqueByTitle[key] || (isVol1 && !/^(\s*vol(?:ume)?\.?\s*)?1$/i.test(uniqueByTitle[key].volume?.trim()))) {
+    const volume = (novel.volume || "").toLowerCase().trim();
+    const isVol1 = /^((vol(?:ume)?)\.?\s*)?1$/.test(volume) || volume === "1";
+
+    if (!uniqueByTitle[key] || (isVol1 && !/^((vol(?:ume)?)\.?\s*)?1$/.test(uniqueByTitle[key].volume?.toLowerCase()?.trim() || ""))) {
       uniqueByTitle[key] = novel;
     }
   }
-  
 
   return Object.values(uniqueByTitle)
     .filter(n => n.popularity > 0)
