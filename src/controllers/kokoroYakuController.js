@@ -110,7 +110,7 @@ async function getNovelInfo(req, res) {
 }
 
 // Get popularity
-async function getPopularNovels(req, res) {
+/* async function getPopularNovels(req, res) {
   try {
     const providerType = req.query.provider; // "mal" or "anilist"
     if (!["mal", "anilist"].includes(providerType)) {
@@ -176,6 +176,65 @@ async function getPopularNovels(req, res) {
     });
   } catch (error) {
     console.error("error in getPopularNovels:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular novels"
+    });
+  }
+} */
+
+async function getPopularNovels(req, res) {
+  try {
+    const provider = req.query.provider || "anilist"; // "anilist" or "mal"
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const perPage = Math.max(1, parseInt(req.query.perPage) || 10);
+
+    const allNovels = await scrapeLatestUpdate();
+
+    const startIndex = (page - 1) * perPage;
+    const pageNovels = allNovels.slice(startIndex, startIndex + perPage);
+
+    const novelInfos = await Promise.all(
+      pageNovels.map(async (novel) => {
+        const info =
+          provider === "mal"
+            ? await fetchMangaFromJikan(novel.providers?.malId)
+            : await fetchMangaFromAnilist(novel.providers?.anilistId);
+
+        return {
+          ...novel,
+          title: novel.title.trim(),
+          popularity: info?.popularity || 0,
+          externalInfo: info || {}
+        };
+      })
+    );
+
+    // Deduplicate by title (case-insensitive)
+    const uniqueByTitle = [];
+    const seenTitles = new Set();
+
+    for (const novel of novelInfos) {
+      const key = novel.title.toLowerCase();
+      if (!seenTitles.has(key)) {
+        seenTitles.add(key);
+        uniqueByTitle.push(novel);
+      }
+    }
+
+    // Sort by popularity (descending)
+    uniqueByTitle.sort((a, b) => b.popularity - a.popularity);
+
+    return res.status(200).json({
+      success: true,
+      total: uniqueByTitle.length,
+      page,
+      perPage,
+      data: uniqueByTitle
+    });
+
+  } catch (error) {
+    console.error("Error in getPopularNovels:", error.message);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch popular novels"
