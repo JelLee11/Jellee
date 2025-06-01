@@ -36,7 +36,7 @@ async function getLatestUpdate(req, res) {
         malId: novel.providers?.malId || "",
         anilistId: novel.providers?.anilistId || ""
       },
-      epubLink: novel.epubLink || ""
+      epubId: novel.epubId || ""
     }));
 
     const paginatedNovels = reformNovels.slice(startIndex, endIndex);
@@ -84,7 +84,7 @@ async function getNovelInfo(req, res) {
         malId: matchingNovel.providers?.malId?.toString() || "",
         anilistId: matchingNovel.providers?.anilistId?.toString() || ""
       },
-      epubLink: matchingNovel.epubLink || ""
+      epubId: matchingNovel.epubId || ""
     };
 
     let externalInfo = null;
