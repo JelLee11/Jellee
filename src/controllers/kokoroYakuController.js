@@ -185,17 +185,28 @@ async function getNovelInfo(req, res) {
 
 async function getPopularNovels(req, res) {
   try {
-    const provider = req.query.provider || "anilist"; // "anilist" or "mal"
+    const provider = req.query.provider || "anilist";
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const perPage = Math.max(1, parseInt(req.query.perPage) || 10);
 
     const allNovels = await scrapeLatestUpdate();
 
-    const startIndex = (page - 1) * perPage;
-    const pageNovels = allNovels.slice(startIndex, startIndex + perPage);
+    // Filter only volume 1 novels first
+    const volume1Novels = allNovels.filter(novel => novel.volume === "1");
 
+    // Deduplicate by title (case-insensitive)
+    const uniqueNovelsMap = new Map();
+    for (const novel of volume1Novels) {
+      const key = novel.title.trim().toLowerCase();
+      if (!uniqueNovelsMap.has(key)) {
+        uniqueNovelsMap.set(key, novel);
+      }
+    }
+    const uniqueNovels = Array.from(uniqueNovelsMap.values());
+
+    // Fetch popularity info only for filtered & deduped novels
     const novelInfos = await Promise.all(
-      pageNovels.map(async (novel) => {
+      uniqueNovels.map(async (novel) => {
         const info =
           provider === "mal"
             ? await fetchMangaFromJikan(novel.providers?.malId)
@@ -203,38 +214,28 @@ async function getPopularNovels(req, res) {
 
         return {
           ...novel,
-          title: novel.title.trim(),
           popularity: info?.popularity || 0,
           externalInfo: info || {}
         };
       })
     );
 
-    // Deduplicate by title (case-insensitive)
-    const uniqueByTitle = [];
-    const seenTitles = new Set();
+    // Sort by popularity descending
+    novelInfos.sort((a, b) => b.popularity - a.popularity);
 
-    for (const novel of novelInfos) {
-      const key = novel.title.toLowerCase();
-      if (!seenTitles.has(key)) {
-        seenTitles.add(key);
-        uniqueByTitle.push(novel);
-      }
-    }
-
-    // Sort by popularity (descending)
-    uniqueByTitle.sort((a, b) => b.popularity - a.popularity);
+    // Paginate
+    const startIndex = (page - 1) * perPage;
+    const pageNovels = novelInfos.slice(startIndex, startIndex + perPage);
 
     return res.status(200).json({
       success: true,
-      total: uniqueByTitle.length,
+      total: novelInfos.length,
       page,
       perPage,
-      data: uniqueByTitle
+      data: pageNovels
     });
-
   } catch (error) {
-    console.error("Error in getPopularNovels:", error.message);
+    console.error("Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch popular novels"
