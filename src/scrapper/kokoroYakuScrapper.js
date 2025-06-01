@@ -115,55 +115,6 @@ async function fetchMangaFromAnilist(anilistId) {
   }
 }
 
-// Fetch popularity
-
-async function getSortedNovelsByPopularity(provider = "anilist") {
-  const response = await axios(BASE_DATA);
-  const novels = response.data;
-
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-  const enrichedNovels = [];
-
-  for (const novel of novels) {
-    let info = null;
-
-    try {
-      if (provider === "anilist" && novel.providers?.anilistId) {
-        info = await fetchMangaFromAnilist(novel.providers.anilistId);
-      } else {
-        continue; // Skip if no AniList ID
-      }
-
-      enrichedNovels.push({
-        ...novel,
-        popularity: info?.popularity || 0
-      });
-
-    } catch (err) {
-      console.error(`AniList fetch failed for "${novel.title}":`, err.message);
-    }
-  }
-
-  // Remove duplicates, keep only volume 1
-  const uniqueByTitle = {};
-  for (const novel of enrichedNovels) {
-    if (!novel.title) continue;
-
-    const key = novel.title.trim().toLowerCase();
-    const volume = novel.volume?.trim().toLowerCase() || "";
-    const isVol1 = /^((vol(ume)?)\.?\s*)?1$/.test(volume) || volume === "1";
-
-    if (!uniqueByTitle[key] || (isVol1 && !/^((vol(ume)?)\.?\s*)?1$/.test(uniqueByTitle[key].volume?.trim().toLowerCase() || ""))) {
-      uniqueByTitle[key] = novel;
-    }
-  }
-
-  return Object.values(uniqueByTitle)
-    .filter(n => n.popularity > 0)
-    .sort((a, b) => b.popularity - a.popularity);
-}
-
-
 module.exports = {
   scrapeLatestUpdate,
   fetchMangaFromJikan,
