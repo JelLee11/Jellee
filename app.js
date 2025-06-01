@@ -1,5 +1,6 @@
 const express = require("express");
 const jelleeNovelRoutes = require("./src/routes/jelleeRouter");
+const kokoroYakuNovelRoutes = require("./src/routes/kokoroYakuRouter");
 
 const app = express();
 const port = 5000;
@@ -11,6 +12,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/novel", jelleeNovelRoutes);
+app.use("/novel", kokoroYakuNovelRoutes);
 
 // Start server
 app.listen(port, () => {
