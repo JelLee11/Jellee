@@ -7,6 +7,64 @@ async function scrapeLatestUpdate() {
   return novels;
 }
 
+// Fetches manga info from the Jikan API by MAL ID
+async function fetchMangaFromJikan(malId) {
+  try {
+    const response = await axios.get(`https://api.jikan.moe/v4/manga/${malId}`);
+    return response.data?.data || null;
+  } catch (error) {
+    console.warn(`Jikan API fetch failed for malId ${malId}:`, error.message);
+    return null;
+  }
+}
+// Fetch from AniList GraphQL API
+async function fetchMangaFromAnilist(anilistId) {
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: MANGA, format: LIGHT NOVEL) {
+        id
+        title {
+          romaji
+          english
+          native
+        }
+        description
+        coverImage {
+          large
+          color
+        }
+        siteUrl
+        genres
+        averageScore
+        chapters
+        volumes
+        status
+      }
+    }
+  `;
+
+  const variables = { id: parseInt(anilistId) };
+
+  try {
+    const response = await axios.post("https://graphql.anilist.co", {
+      query,
+      variables
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      }
+    });
+
+    return response.data?.data?.Media || null;
+  } catch (error) {
+    console.warn(`AniList API fetch failed for anilistId ${anilistId}:`, error.message);
+    return null;
+  }
+}
+
 module.exports = {
-  scrapeLatestUpdate
+  scrapeLatestUpdate,
+  fetchMangaFromJikan,
+  fetchMangaFromAnilist
 };
