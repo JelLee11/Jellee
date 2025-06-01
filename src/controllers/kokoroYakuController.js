@@ -30,9 +30,9 @@ async function getLatestUpdate(req, res) {
       title: novel.title || "",
       cover: novel.cover || "",
       volume: novel.volume || "",
-      provider: {
-        malId: novel.provider?.malId || "",
-        anilistId: novel.provider?.anilistId || ""
+      providers: {
+        malId: novel.providers?.malId || "",
+        anilistId: novel.providers?.anilistId || ""
       },
       epubLink: novel.epubLink || ""
     }));
