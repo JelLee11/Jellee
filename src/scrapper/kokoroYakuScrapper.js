@@ -29,6 +29,7 @@ async function fetchMangaFromJikan(malId) {
         userPreferred: data.title || ""
       },
       type: data.type || "MANGA",
+      bannerImage: data.bannerImage || "",
       status: data.status || "",
       score: data.score || 0,
       popularity: data.popularity || 0,
@@ -56,6 +57,7 @@ async function fetchMangaFromAnilist(anilistId) {
         type
         status
         description
+        bannerImage
         coverImage {
           extraLarge
           large
@@ -102,6 +104,7 @@ async function fetchMangaFromAnilist(anilistId) {
       },
       titles: data.title || {},
       type: data.type || "MANGA",
+      bannerImage: data.bannerImage || "",
       status: data.status || "",
       score: data.averageScore || 0,
       popularity: data.popularity || 0,
