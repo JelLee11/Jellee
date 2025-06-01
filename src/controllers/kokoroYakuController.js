@@ -110,79 +110,6 @@ async function getNovelInfo(req, res) {
 }
 
 // Get popularity
-/* async function getPopularNovels(req, res) {
-  try {
-    const providerType = req.query.provider; // "mal" or "anilist"
-    if (!["mal", "anilist"].includes(providerType)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid provider type. Must be 'mal' or 'anilist'."
-      });
-    }
-
-    const novels = await scrapeLatestUpdate();
-
-    // Filter by provider
-    const filteredNovels = novels.filter(novel =>
-      providerType === "mal"
-        ? novel.providers?.malId
-        : novel.providers?.anilistId
-    );
-
-    // ✅ Apply pagination BEFORE fetching popularity
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const perPage = Math.max(1, parseInt(req.query.perPage) || 10);
-    const startIndex = (page - 1) * perPage;
-    const endIndex = startIndex + perPage;
-
-    const pageItems = filteredNovels.slice(startIndex, endIndex);
-
-    // ✅ Fetch popularity for current page only
-    const enriched = await Promise.all(
-      pageItems.map(async novel => {
-        const id =
-          providerType === "mal"
-            ? novel.providers.malId
-            : novel.providers.anilistId;
-
-        const info =
-          providerType === "mal"
-            ? await fetchMangaFromJikan(id)
-            : await fetchMangaFromAnilist(id);
-
-        return {
-          ...novel,
-          popularity: info?.popularity || 0,
-          score: info?.score || 0,
-          titles: info?.titles || {},
-          images: info?.images || {},
-          synopsis: info?.synopsis || "",
-          genres: info?.genres || [],
-          authors: info?.authors || [],
-        };
-      })
-    );
-
-    // ✅ Sort only the page items by popularity
-    const sorted = enriched.sort((a, b) => b.popularity - a.popularity);
-
-    return res.status(200).json({
-      success: true,
-      provider: providerType,
-      total: filteredNovels.length,
-      page,
-      perPage,
-      data: sorted
-    });
-  } catch (error) {
-    console.error("error in getPopularNovels:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch popular novels"
-    });
-  }
-} */
-
 async function getPopularNovels(req, res) {
   try {
     const provider = req.query.provider || "anilist";
@@ -243,8 +170,70 @@ async function getPopularNovels(req, res) {
   }
 }
 
+// Get top
+async function getTopNovels(req, res) {
+  try {
+    const provider = req.query.provider || "anilist";
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const perPage = Math.max(1, parseInt(req.query.perPage) || 10);
+
+    const allNovels = await scrapeLatestUpdate();
+
+    // Filter only volume 1 novels first
+    const volume1Novels = allNovels.filter(novel => novel.volume === "1");
+
+    // Deduplicate by title (case-insensitive)
+    const uniqueNovelsMap = new Map();
+    for (const novel of volume1Novels) {
+      const key = novel.title.trim().toLowerCase();
+      if (!uniqueNovelsMap.has(key)) {
+        uniqueNovelsMap.set(key, novel);
+      }
+    }
+    const uniqueNovels = Array.from(uniqueNovelsMap.values());
+
+    // Fetch popularity info only for filtered & deduped novels
+    const novelInfos = await Promise.all(
+      uniqueNovels.map(async (novel) => {
+        const info =
+          provider === "mal"
+            ? await fetchMangaFromJikan(novel.providers?.malId)
+            : await fetchMangaFromAnilist(novel.providers?.anilistId);
+
+        return {
+          ...novel,
+          score: info?.score || 0,
+          externalInfo: info || {}
+        };
+      })
+    );
+
+    // Sort by popularity descending
+    novelInfos.sort((a, b) => b.score - a.score);
+
+    // Paginate
+    const startIndex = (page - 1) * perPage;
+    const pageNovels = novelInfos.slice(startIndex, startIndex + perPage);
+
+    return res.status(200).json({
+      success: true,
+      total: novelInfos.length,
+      page,
+      perPage,
+      data: pageNovels
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular novels"
+    });
+  }
+}
+
 module.exports = {
   getLatestUpdate,
   getNovelInfo,
-  getPopularNovels
+  getPopularNovels,
+  getTopNovels
 };
