@@ -135,7 +135,26 @@ async function getSortedNovelsByPopularity(provider = "anilist") {
     };
   }));
 
-  return enrichedNovels
+  /* return enrichedNovels
+    .filter(n => n.popularity > 0)
+    .sort((a, b) => b.popularity - a.popularity); */
+    
+    const uniqueByTitle = {};
+  for (const novel of enrichedNovels) {
+    if (!novel.title) continue;
+  
+    const key = novel.title.trim().toLowerCase();
+  
+    const isVol1 = /^(\s*vol(?:ume)?\.?\s*)?1$/i.test(novel.volume?.trim());
+  
+    // Keep volume 1 or the first seen if not already set
+    if (!uniqueByTitle[key] || (isVol1 && !/^(\s*vol(?:ume)?\.?\s*)?1$/i.test(uniqueByTitle[key].volume?.trim()))) {
+      uniqueByTitle[key] = novel;
+    }
+  }
+  
+
+  return Object.values(uniqueByTitle)
     .filter(n => n.popularity > 0)
     .sort((a, b) => b.popularity - a.popularity);
 }
