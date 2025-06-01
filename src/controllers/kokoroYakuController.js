@@ -16,6 +16,17 @@ async function getLatestUpdate(req, res) {
     const startIndex = (page - 1) * perPage;
     const endIndex = page * perPage;
 
+    /* if (startIndex >= novels.length) {
+      return res.status(200).send({
+        success: true,
+        message: "No more data available!",
+        total: novels.length,
+        page,
+        perPage,
+        data: []
+      });
+    }*/
+    
     if (startIndex >= novels.length) {
       return res.status(200).send({
         success: true,
@@ -23,6 +34,8 @@ async function getLatestUpdate(req, res) {
         total: novels.length,
         page,
         perPage,
+        totalPages: Math.ceil(novels.length / perPage),
+        hasNextPage: false,
         data: []
       });
     }
@@ -41,13 +54,28 @@ async function getLatestUpdate(req, res) {
 
     const paginatedNovels = reformNovels.slice(startIndex, endIndex);
 
-    return res.status(200).send({
+    /* return res.status(200).send({
       success: true,
       total: novels.length,
       page,
       perPage,
       data: paginatedNovels
+    }); */
+    
+    const total = novels.length;
+    const totalPages = Math.ceil(total / perPage);
+    const hasNextPage = page < totalPages;
+    
+    return res.status(200).send({
+      success: true,
+      total,
+      page,
+      perPage,
+      totalPages,
+      hasNextPage,
+      data: paginatedNovels
     });
+
   } catch (error) {
     console.error("error in getLatestUpdate:", error.message);
     return res.status(500).send({
