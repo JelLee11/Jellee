@@ -1,7 +1,8 @@
 const express = require("express");
 const {
   getLatestUpdate,
-  getNovelInfo
+  getNovelInfo,
+  getPopularNovels
 } = require("../controllers/kokoroYakuController");
 
 const router = express.Router();
@@ -10,5 +11,7 @@ const router = express.Router();
 router.get("/kokoro/latest", getLatestUpdate);
 // Route: /kokoro/info/:novelId
 router.get("/kokoro/info/:novelId", getNovelInfo);
+// Route: /kokoro/popularity
+router.get("/kokoro/popularity", getNovelInfo);
 
 module.exports = router;
