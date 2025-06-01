@@ -1,6 +1,8 @@
 
 const {
-  scrapeLatestUpdate
+  scrapeLatestUpdate,
+  fetchMangaFromJikan,
+  fetchMangaFromAnilist
 } = require("../scrapper/kokoroYakuScrapper");
 
 async function getLatestUpdate(req, res) {
@@ -55,6 +57,59 @@ async function getLatestUpdate(req, res) {
   }
 }
 
+async function getNovelInfo(req, res) {
+  try {
+    const novelId = req.params.novelId;
+    const providerType = req.query.provider; // "mal" or "anilist"
+
+    const novels = await scrapeLatestUpdate();
+
+    const matchingNovel = novels.find(novel =>
+      novel.id?.toString().padStart(6, "0") === novelId
+    );
+
+    if (!matchingNovel) {
+      return res.status(404).json({
+        success: false,
+        message: "Novel not found"
+      });
+    }
+
+    const novel = {
+      id: matchingNovel.id?.toString().padStart(6, "0"),
+      title: matchingNovel.title || "",
+      cover: matchingNovel.cover || "",
+      volume: matchingNovel.volume || "",
+      providers: {
+        malId: matchingNovel.provider?.malId?.toString() || "",
+        anilistId: matchingNovel.provider?.anilistId?.toString() || ""
+      },
+      epubLink: matchingNovel.epubLink || ""
+    };
+
+    let externalInfo = null;
+    if (providerType === "mal" && novel.providers.malId) {
+      externalInfo = await fetchMangaFromJikan(novel.providers.malId);
+    } else if (providerType === "anilist" && novel.providers.anilistId) {
+      externalInfo = await fetchMangaFromAnilist(novel.providers.anilistId);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: novel,
+      extra: externalInfo
+    });
+
+  } catch (error) {
+    console.error("error in getNovelInfo:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch novel info"
+    });
+  }
+}
+
 module.exports = {
-  getLatestUpdate
+  getLatestUpdate,
+  getNovelInfo
 };
