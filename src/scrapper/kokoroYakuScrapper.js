@@ -130,7 +130,6 @@ async function getSortedNovelsByPopularity(provider = "anilist") {
     try {
       if (provider === "anilist" && novel.providers?.anilistId) {
         info = await fetchMangaFromAnilist(novel.providers.anilistId);
-        await sleep(300); // Prevent AniList rate limit
       } else {
         continue; // Skip if no AniList ID
       }
