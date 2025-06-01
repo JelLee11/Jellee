@@ -116,6 +116,7 @@ async function fetchMangaFromAnilist(anilistId) {
 }
 
 // Fetch popularity
+
 async function getSortedNovelsByPopularity(provider = "anilist") {
   const response = await axios(BASE_DATA);
   const novels = response.data;
@@ -127,16 +128,11 @@ async function getSortedNovelsByPopularity(provider = "anilist") {
     let info = null;
 
     try {
-      if (provider === "mal" && novel.providers?.malId) {
-        info = await fetchMangaFromJikan(novel.providers.malId);
-        await sleep(300); // Prevent Jikan rate limit
-      } else if (provider === "anilist" && novel.providers?.anilistId) {
+      if (provider === "anilist" && novel.providers?.anilistId) {
         info = await fetchMangaFromAnilist(novel.providers.anilistId);
         await sleep(300); // Prevent AniList rate limit
-      }
-
-      if (!info) {
-        console.warn(`No info found for "${novel.title}" [${provider}]`);
+      } else {
+        continue; // Skip if no AniList ID
       }
 
       enrichedNovels.push({
@@ -145,20 +141,20 @@ async function getSortedNovelsByPopularity(provider = "anilist") {
       });
 
     } catch (err) {
-      console.error(`Failed to fetch info for ${novel.title}:`, err.message);
+      console.error(`AniList fetch failed for "${novel.title}":`, err.message);
     }
   }
 
-  // Filter only Volume 1 entries and remove duplicates
+  // Remove duplicates, keep only volume 1
   const uniqueByTitle = {};
   for (const novel of enrichedNovels) {
     if (!novel.title) continue;
 
     const key = novel.title.trim().toLowerCase();
-    const volume = (novel.volume || "").toLowerCase().trim();
-    const isVol1 = /^((vol(?:ume)?)\.?\s*)?1$/.test(volume) || volume === "1";
+    const volume = novel.volume?.trim().toLowerCase() || "";
+    const isVol1 = /^((vol(ume)?)\.?\s*)?1$/.test(volume) || volume === "1";
 
-    if (!uniqueByTitle[key] || (isVol1 && !/^((vol(?:ume)?)\.?\s*)?1$/.test(uniqueByTitle[key].volume?.toLowerCase()?.trim() || ""))) {
+    if (!uniqueByTitle[key] || (isVol1 && !/^((vol(ume)?)\.?\s*)?1$/.test(uniqueByTitle[key].volume?.trim().toLowerCase() || ""))) {
       uniqueByTitle[key] = novel;
     }
   }
@@ -167,6 +163,7 @@ async function getSortedNovelsByPopularity(provider = "anilist") {
     .filter(n => n.popularity > 0)
     .sort((a, b) => b.popularity - a.popularity);
 }
+
 
 module.exports = {
   scrapeLatestUpdate,
