@@ -183,14 +183,6 @@ async function getPopularNovels(req, res) {
     }
     
     const pageNovels = novelInfos.slice(startIndex, startIndex + perPage);
-
-    /* return res.status(200).json({
-      success: true,
-      total: novelInfos.length,
-      page,
-      perPage,
-      data: pageNovels
-    }); */
     
     const total = novelInfos.length;
     const totalPages = Math.ceil(total / perPage);
@@ -254,18 +246,37 @@ async function getTopNovels(req, res) {
 
     // Sort by popularity descending
     novelInfos.sort((a, b) => b.score - a.score);
-
     // Paginate
     const startIndex = (page - 1) * perPage;
+    const endIndex = page * perPage;
+    if (startIndex >= novelInfos.length) {
+      return res.status(200).send({
+        success: true,
+        message: "No more data available!",
+        total: novelInfos.length,
+        page,
+        perPage,
+        totalPages: Math.ceil(novelInfos.length / perPage),
+        hasNextPage: false,
+        data: []
+      });
+    }
+    
     const pageNovels = novelInfos.slice(startIndex, startIndex + perPage);
-
+    const total = novelInfos.length;
+    const totalPages = Math.ceil(total / perPage);
+    const hasNextPage = page < totalPages;
+    
     return res.status(200).json({
       success: true,
-      total: novelInfos.length,
+      total,
       page,
       perPage,
+      totalPages,
+      hasNextPage,
       data: pageNovels
     });
+    
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({
