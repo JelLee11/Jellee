@@ -196,7 +196,7 @@ async function getPopularNovels(req, res) {
     const totalPages = Math.ceil(total / perPage);
     const hasNextPage = page < totalPages;
     
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       total,
       page,
