@@ -3,9 +3,10 @@ const {
   getLatestUpdate,
   getNovelInfo,
   getPopularNovels,
-  getTopNovels
+  getTopNovels,
+  searchNovelsByTitle,
+  filterNovelsByGenres
 } = require("../controllers/kokoroYakuController");
-
 const router = express.Router();
 
 // Define the route for the newest novels
@@ -16,5 +17,9 @@ router.get("/kokoro/info/:novelId", getNovelInfo);
 router.get("/kokoro/popular", getPopularNovels);
 // Route: /kokoro/top
 router.get("/kokoro/top", getTopNovels);
+// Search by title
+router.get("/kokoro/search", searchNovelsByTitle);
+// Filtr4 genres
+router.get("/kokoro/filter", filterNovelsByGenres);
 
 module.exports = router;
