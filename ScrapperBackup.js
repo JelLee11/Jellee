@@ -6,16 +6,15 @@ const inputFile = path.resolve("./data/data.json");
 const BASE_DATA = JSON.parse(fs.readFileSync(inputFile, "utf-8"));
 
 async function scrapeLatestUpdate() {
-  // const response = await axios(BASE_DATA);
-//   const novels = response.data;
-  return BASE_DATA;
+  const response = await axios(BASE_DATA);
+  const novels = response.data;
+  return novels;
 }
 
 async function scrapeMostRated() {
   try {
-    // const response = await axios.get(BASE_DATA);
-    // const novels = response.data;
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const novels = response.data;
 
     // Sort the unique novels by rating from highest to lowest
     novels.sort((a, b) => b.anilist.rating - a.anilist.rating);
@@ -29,9 +28,8 @@ async function scrapeMostRated() {
 
 async function scrapeMostPopular() {
   try {
-    // const response = await axios.get(BASE_DATA);
-    // const novels = response.data;
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const novels = response.data;
     // Sort the unique novels by rating from highest to lowest
     novels.sort((a, b) => b.anilist.popularity - a.anilist.popularity);
 
@@ -44,8 +42,9 @@ async function scrapeMostPopular() {
 
 async function scrapeInfo(id) {
   try {
-    // const response = await axios.get(BASE_DATA);
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const novels = response.data;
+
     // Find the main novel by ID
     const novel = novels.find(novel => novel.id === id);
 
@@ -62,8 +61,8 @@ async function scrapeInfo(id) {
 
 async function scrapeSearch(query) {
   try {
-    // const response = await axios.get(BASE_DATA);
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const novels = response.data;
 
     if (!novels || !Array.isArray(novels)) {
       throw new Error("Invalid data format or empty data from BASE_DATA.");
@@ -92,8 +91,8 @@ async function scrapeSearch(query) {
 
 async function scrapeByPublisher(query, sortBy) {
   try {
-    // const response = await axios.get(BASE_DATA);
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const novels = response.data;
 
     if (!novels || !Array.isArray(novels)) {
       throw new Error("Invalid data format or empty data from BASE_DATA.");
@@ -120,11 +119,34 @@ async function scrapeByPublisher(query, sortBy) {
   }
 }
 
+/*async function filterScrap({ genres = [], status, publisher }) {
+  try {
+    // Fetch data
+    const response = await axios.get(BASE_DATA);
+    const data = response.data;
+
+    // Filter data based on conditions
+    
+    return data.filter(item => {
+      const matchesStatus = !status || item.status.toLowerCase() === status.toLowerCase();
+      const matchesGenres = genres.map((genre) => genre.toLowerCase());
+      item.genres.some((novelGenre) =>
+            matchesGenres.includes(novelGenre.toLowerCase())
+          );
+      const matchesPublisher = !publisher || item.translation.toLowerCase() === publisher.toLowerCase();
+      
+      return matchesStatus && matchesGenres && matchesPublisher;
+    });
+  } catch (error) {
+    throw error;
+  }
+} */
+
 async function filterScrap({ genres = [], status, publisher }) {
   try {
     // Fetch data
-    // const response = await axios.get(BASE_DATA);
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const data = response.data;
 
     // Filter data based on conditions
     return data.filter(item => {
@@ -150,8 +172,8 @@ async function filterScrap({ genres = [], status, publisher }) {
 
 async function volumesScrape(id) {
   try {
-    // const response = await axios.get(BASE_DATA); // Fetch JSON data
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA); // Fetch JSON data
+    const novels = response.data;
 
     // Find the novel by ID
     const novel = novels.find(novel => novel.id === id);
@@ -170,8 +192,8 @@ async function volumesScrape(id) {
 
 async function recommendationsScrape(id) {
   try {
-    // const response = await axios.get(BASE_DATA);
-    const novels = [...BASE_DATA];
+    const response = await axios.get(BASE_DATA);
+    const novels = response.data;
 
     // Find the main novel by ID
     const mainNovel = novels.find(novel => novel.id === id);
